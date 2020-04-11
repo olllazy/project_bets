@@ -45,13 +45,14 @@ def get_content(html):
 					print('	Кря_comp: '+comp)
 			else:
 				notmatch = row.find('td',class_='table-complex__wrap')
-				if notmatch == None:
+				notlive = row.find('div',class_='table__live')
+				if (notmatch == None) and (notlive == None):
 					bothteams = row.find('h3',class_='table__match-title-text').get_text(strip=True)
 					#print('		Кря: '+bothteams)
 					team1 = bothteams[:bothteams.find(' — ')]
 					team2 = bothteams[bothteams.find(' — ')+3:]
 					#print('		Кря_teams: '+team1+' : '+team2)
-					datetime = row.find('div',class_='table__time')
+					datetime = row.find('div',class_='table__timescore')					
 					str_datetime = datetime.find(has_no_class).get_text(strip=True)
 					str_date = str_datetime[:str_datetime.find(' в ')]
 					str_time = str_datetime[str_datetime.find(' в ')+3:]
