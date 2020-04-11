@@ -27,14 +27,16 @@ def get_html(driver):
 def get_content(html):
 	soup = BeautifulSoup(html,'html.parser')
 	matches = [] 
+	flag = 0
 	table = soup.find('table',class_='table')
 	desks = table.find_all('tbody',class_='table__body')
-	print("Кря_desks:",len(desks))
+	#print("Кря_desks:",len(desks))
 	i = 1
 	for desk in desks:
 		#print("	Кря_desk_"+str(i))
 		i = i+1
 		comp = ""
+		games = []
 		rows = desk.find_all('tr',class_='table__row')
 		#print("		Кря_rows:",len(rows))
 		for row in rows:
@@ -42,11 +44,12 @@ def get_content(html):
 				headline = row.find("th")
 				if headline != None:
 					comp = headline.find("h2",class_='table__title-text').get_text(strip=True)
-					print('	Кря_comp: '+comp)
+					#print('	Кря_comp: ' + comp)
 			else:
 				notmatch = row.find('td',class_='table-complex__wrap')
 				notlive = row.find('div',class_='table__live')
 				if (notmatch == None) and (notlive == None):
+					flag = 1
 					bothteams = row.find('h3',class_='table__match-title-text').get_text(strip=True)
 					#print('		Кря: '+bothteams)
 					team1 = bothteams[:bothteams.find(' — ')]
@@ -62,9 +65,22 @@ def get_content(html):
 						cX = float(coefs[1].get_text(strip=True))
 						c2 = float(coefs[2].get_text(strip=True))
 					except ValueError:
-						print('		Кря_game:',team1,'vs',team2,'|',str_date,str_time,'|','нет коэффициентов')
+						#print('		Кря_game:',team1,'vs',team2,'|',str_date,str_time,'|','нет коэффициентов')
 					else:
-						print('		Кря_game:',team1,'vs',team2,'|',str_date,str_time,'|',c1,'|',cX,'|',c2)
+						#print('		Кря_game:',team1,'vs',team2,'|',str_date,str_time,'|',c1,'|',cX,'|',c2)
+						games.append({
+							'type':'game',
+							'date':str_date,
+							'time':str_time,
+							'team1':team1,
+							'team2':team1,
+							'k1':c1,
+							'kx':cX,
+							'k2':c2
+						})		
+		if flag == 1:
+			matches.append({'type':'comp','name':comp})
+			matches.extend(games)
 
 
 	'''
@@ -105,9 +121,12 @@ def get_content(html):
 def save_file(items,path):
 	with open(path,'w',newline='') as file:
 			writer = csv.writer(file,delimiter=';')
-			writer.writerow(['Дата','Время','Команда 1','Команда 2','1', 'Х', '2'])
 			for item in items:
-				writer.writerow([item['date'],item['time'],item['team1'],item['team2'],item['k1'], item['kx'], item['k2']])
+				if item['type'] == 'comp':
+					writer.writerow([item['name']])
+					writer.writerow(['Дата','Время','Команда 1','Команда 2','1', 'Х', '2'])
+				else:
+					writer.writerow([item['date'],item['time'],item['team1'],item['team2'],str(item['k1']), str(item['kx']), str(item['k2'])])
 
 def init_driver():
     driver = webdriver.Chrome('C:\\webdrivers\\chromedriver.exe')
@@ -120,10 +139,11 @@ def parse():
 		driver.get(URL) 
 		html = get_html(driver)
 		#print('Кря_html:',html)				
-		get_content(html)
+		matches = get_content(html)
+		save_file(matches,FILE)
 	finally:
 		#time.sleep(2)
-		print('Кря_совсем_конец')
+		#print('Кря_совсем_конец')
 		driver.quit()
 
 def main():
