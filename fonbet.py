@@ -11,9 +11,86 @@ import csv
 
 import string
 
+
 URL = 'https://www.fonbet.ru/bets/football/'
 HEADERS = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36', 'accept':'*/*'} 
 FILE = 'fonbet.csv'
+
+import pytz, datetime
+from datetime import date
+from datetime import time
+from datetime import timedelta
+from datetime import datetime, timezone
+
+def local_to_utc(local_datetime):
+	local = pytz.timezone ("Europe/Moscow")
+	naive = local_datetime
+	local_dt = local.localize(naive, is_dst=None)
+	utc_dt = local_dt.astimezone(pytz.utc)
+	return utc_dt
+
+def int_month(str_month):
+	if str_month == 'января':
+		return 1
+	if str_month == 'февраля':
+		return 2
+	if str_month == 'марта':
+		return 3
+	if str_month == 'апреля':
+		return 4 
+	if str_month == 'мая':
+		return 5
+	if str_month == 'июня':
+		return 6
+	if str_month == 'июля':
+		return 7
+	if str_month == 'августа':
+		return 8
+	if str_month == 'сентября':
+		return 9
+	if str_month == 'октября':
+		return 10
+	if str_month == 'ноября':
+		return 11
+	if str_month == 'декабря':
+		return 12
+
+def format_date(str_date):
+	d = date.today()
+	if str_date == 'Сегодня':
+		pass
+	else:
+		if str_date == 'Завтра':
+			delta = timedelta(days=1)
+			#print('Кря_+1')
+			d = d + delta
+		else:
+			str_day = str_date[:str_date.find(' ')]
+			day = int(str_day)
+			str_month = str_date[str_date.find(' ')+1:]
+			month = int_month(str_month)
+			year = d.year
+			d = date(year,month,day)
+	return d
+
+def format_time(str_time):
+	hours = int(str_time[:str_time.find(':')])
+	minutes = int(str_time[str_time.find(':')+1:])
+	t = timedelta(hours=hours,minutes=minutes)
+	return t
+
+def format_datetime(str_date,str_time):
+	d = format_date(str_date)
+	t = format_time(str_time)
+	dt = datetime(year=d.year,month=d.month,day=d.day)
+	dt = dt + t
+	dt = local_to_utc(dt)
+	dt = utc_to_local(dt)
+	return dt
+	
+
+def utc_to_local(utc_dt):
+    return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
 
 def has_no_class(tag):
     return not tag.has_attr('class')
@@ -58,20 +135,23 @@ def get_content(html):
 					datetime = row.find('div',class_='table__timescore')					
 					str_datetime = datetime.find(has_no_class).get_text(strip=True)
 					str_date = str_datetime[:str_datetime.find(' в ')]
+					date = format_date(str_date)
 					str_time = str_datetime[str_datetime.find(' в ')+3:]
+					time = format_time(str_time)
 					coefs = row.find_all('td',class_='_type_btn',limit=3)
 					try:
 						c1 = float(coefs[0].get_text(strip=True))
 						cX = float(coefs[1].get_text(strip=True))
 						c2 = float(coefs[2].get_text(strip=True))
 					except ValueError:
+						pass
 						#print('		Кря_game:',team1,'vs',team2,'|',str_date,str_time,'|','нет коэффициентов')
 					else:
 						#print('		Кря_game:',team1,'vs',team2,'|',str_date,str_time,'|',c1,'|',cX,'|',c2)
 						games.append({
 							'type':'game',
-							'date':str_date,
-							'time':str_time,
+							'date':date,
+							'time':time,
 							'team1':team1,
 							'team2':team1,
 							'k1':c1,
@@ -82,40 +162,6 @@ def get_content(html):
 			matches.append({'type':'comp','name':comp})
 			matches.extend(games)
 
-
-	'''
-	items = desk.find_all('div', class_='tg__match_header') #список матчей на сайте
-
-	itteams = desk.find_all('div',class_='prematch_name') #cписок названий команд на сайте
-	teams = [] #список названий команд
-	for team in itteams:
-		teams.append(team.get_text(strip=True))	#текст
-	
-	itcoef = desk.find_all('div',class_='prematch_stake_odd_factor') #cписок коэффициентов матчей на сайте tg--mar-r-8
-	coefs = []#cписок коэффициентов матчей
-	for coef in itcoef:
-		coefs.append(coef.get_text(strip=True))	#текст
-
-	itdatetime = desk.find
-
-	matches = []
-	i=0
-	j=0
-	for item in items:
-		matches.append({
-			'date':item.find('div',class_='bui-event-row__date-d4666b').get_text(strip =True),
-			'time':item.find('span',class_='bui-event-row__time-a6eb59').get_text(strip =True),
-			'team1':teams[i],
-			'team2':teams[i+1],
-			'k1':coefs[j],
-			'kx':coefs[j+1],
-			'k2':coefs[j+2]
-		})
-		i = i + 2
-		j += 3
-	#print(matches)
-	#print(len(matches))
-	'''
 	return matches
 
 def save_file(items,path):
