@@ -100,16 +100,15 @@ def get_html(driver):
 	html = driver.page_source
 	return html
 
-
 def get_content(html):
 	soup = BeautifulSoup(html,'html.parser')
 	matches = [] 
-	flag = 0
 	table = soup.find('table',class_='table')
 	desks = table.find_all('tbody',class_='table__body')
 	#print("Кря_desks:",len(desks))
 	i = 1
 	for desk in desks:
+		flag = 0
 		#print("	Кря_desk_"+str(i))
 		i = i+1
 		comp = ""
@@ -153,7 +152,7 @@ def get_content(html):
 							'date':date,
 							'time':time,
 							'team1':team1,
-							'team2':team1,
+							'team2':team2,
 							'k1':c1,
 							'kx':cX,
 							'k2':c2
